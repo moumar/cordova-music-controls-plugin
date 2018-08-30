@@ -10,6 +10,7 @@ import java.io.File;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.Random;
+import java.util.Base64;
 
 import android.util.Log;
 import android.R;
@@ -24,7 +25,6 @@ import android.os.Build;
 import android.graphics.BitmapFactory;
 import android.graphics.Bitmap;
 import android.net.Uri;
-
 import android.app.NotificationChannel;
 
 public class MusicControlsNotification {
@@ -94,13 +94,15 @@ public class MusicControlsNotification {
 	// Get image from url
 	private void getBitmapCover(String coverURL){
 		try{
-			if(coverURL.matches("^(https?|ftp)://.*$"))
+			if (coverURL.matches("^(https?|ftp)://.*$"))
 				// Remote image
 				this.bitmapCover = getBitmapFromURL(coverURL);
-			else{
+			else if (coverURL.startsWith("data:"))
+				// data url
+				this.bitmapCover = getBitmapFromDataURL(coverURL);
+			else
 				// Local image
 				this.bitmapCover = getBitmapFromLocal(coverURL);
-			}
 		} catch (Exception ex) {
 			ex.printStackTrace();
 		}
@@ -140,6 +142,22 @@ public class MusicControlsNotification {
 			connection.connect();
 			InputStream input = connection.getInputStream();
 			Bitmap myBitmap = BitmapFactory.decodeStream(input);
+			return myBitmap;
+		} catch (Exception ex) {
+			ex.printStackTrace();
+			return null;
+		}
+	}
+
+	// get Remote image
+	private Bitmap getBitmapFromDataURL(String dataURL) {
+		try {
+			// data:image/jpeg;base64,MTI=
+			String encodingPrefix = "base64,";
+			int contentStartIndex = dataURL.indexOf(encodingPrefix) + encodingPrefix.length();
+			byte[] imageData = Base64.getDecoder().decode(dataURL.substring(contentStartIndex));
+
+			Bitmap myBitmap = BitmapFactory.decodeByteArray(imageData, 0, imageData.length);
 			return myBitmap;
 		} catch (Exception ex) {
 			ex.printStackTrace();
